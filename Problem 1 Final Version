@@ -1,0 +1,160 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <iomanip>
+using namespace std;
+
+/* ============================================================
+   CLASS: Date
+   ============================================================ */
+class Date {
+public:
+    int month;
+    int day;
+    int year;
+
+    Date(int m = 1, int d = 1, int y = 2000)
+        : month(m), day(d), year(y) {}
+
+    bool equals(int m, int d, int y) const {
+        return (month == m && day == d && year == y);
+    }
+
+    string toString() const {
+        ostringstream os;
+        os << setfill('0')
+           << setw(2) << month << "/"
+           << setw(2) << day << "/"
+           << setw(4) << year;
+        return os.str();
+    }
+};
+
+/* ============================================================
+   ABSTRACT BASE CLASS: Appointment
+   ============================================================ */
+class Appointment {
+protected:
+    string description;
+    Date date;
+
+public:
+    Appointment(const string &desc, const Date &d)
+        : description(desc), date(d) {}
+
+    virtual ~Appointment() {}
+
+    virtual bool occurs_on(int month, int day, int year) const = 0;
+
+    virtual string type() const = 0;
+
+    virtual string toString() const {
+        ostringstream os;
+        os << "[" << type() << "] "
+           << description << " on " << date.toString();
+        return os.str();
+    }
+};
+
+/* ============================================================
+   DERIVED CLASS: Day Appointment
+   ============================================================ */
+class Day : public Appointment {
+public:
+    Day(const string &desc, const Date &d)
+        : Appointment(desc, d) {}
+
+    bool occurs_on(int month, int day, int year) const {
+        return date.equals(month, day, year);
+    }
+
+    string type() const { return "Day"; }
+
+    string toString() const {
+        ostringstream os;
+        os << "[Day] " << description
+           << " scheduled for " << date.toString();
+        return os.str();
+    }
+};
+
+/* ============================================================
+   DERIVED CLASS: Monthly Appointment
+   ============================================================ */
+class Monthly : public Appointment {
+public:
+    Monthly(const string &desc, const Date &d)
+        : Appointment(desc, d) {}
+
+    bool occurs_on(int month, int day, int year) const {
+        // Occurs each month on the same day and year
+        return (day == date.day && year == date.year);
+    }
+
+    string type() const { return "Monthly"; }
+
+    string toString() const {
+        ostringstream os;
+        os << "[Monthly] " << description
+           << " (occurs every month on day "
+           << date.day << " during " << date.year << ")";
+        return os.str();
+    }
+};
+
+/* ============================================================
+   DISPLAY FUNCTION
+   ============================================================ */
+void displayMatches(vector<Appointment*> &appts, int m, int d, int y) {
+    cout << "\nAppointments on "
+         << setfill('0') << setw(2) << m << "/"
+         << setw(2) << d << "/" << setw(4) << y << ":\n";
+
+    bool found = false;
+    for (size_t i = 0; i < appts.size(); ++i) {
+        if (appts[i]->occurs_on(m, d, y)) {
+            cout << "  - " << appts[i]->toString() << endl;
+            found = true;
+        }
+    }
+    if (!found)
+        cout << "  (No appointments on this date)\n";
+}
+
+/* ============================================================
+   MAIN FUNCTION
+   ============================================================ */
+int main() {
+    cout << "===== Appointment Scheduler =====\n";
+
+    vector<Appointment*> appts;
+
+    // Add example data
+    appts.push_back(new Day("Dentist Appointment", Date(10, 18, 2025)));
+    appts.push_back(new Monthly("Pay Rent", Date(10, 1, 2025)));
+    appts.push_back(new Day("Friend's Birthday", Date(11, 2, 2025)));
+    appts.push_back(new Monthly("Project Sync", Date(10, 18, 2025)));
+    appts.push_back(new Day("Conference", Date(10, 18, 2024)));
+
+    cout << "\nYou currently have " << appts.size() << " appointments.\n";
+
+    // Prompt user for a date
+    int m, d, y;
+    cout << "\nEnter a date to check (MM DD YYYY): ";
+    if (!(cin >> m >> d >> y)) {
+        cerr << "Invalid input. Program exiting.\n";
+        return 1;
+    }
+
+    // Display results
+    displayMatches(appts, m, d, y);
+
+    // Cleanup memory
+    for (size_t i = 0; i < appts.size(); ++i) {
+        delete appts[i];
+    }
+
+    cout << "\n===== End of Program =====\n";
+    return 0;
+}
