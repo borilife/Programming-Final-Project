@@ -1,0 +1,185 @@
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
+
+//##############################
+//## Base class: Person
+//## This base class provides variables and functions needed for subclasses
+//##############################
+class Person {
+public:
+    Person(std::string name, std::string phone, std::string email)
+        : name_(std::move(name)), phone_(std::move(phone)), email_(std::move(email)) {
+    }
+
+    virtual ~Person() = default;
+
+    //  Virtual 'tostring' below that outputs the required human readable description.
+    virtual std::string to_string() const {
+        std::ostringstream personOut;
+        personOut << "\nPerson named " << name_
+            << " has phone number " << phone_
+            << " and can be reached at " << email_;
+        return personOut.str();
+    }
+
+    // Forwards the call to virtual 'to_string' above.
+    std::string toString() const { return to_string(); }
+
+    // Makes sure called items remain the same 
+protected:
+    const std::string& name()  const { return name_; }
+    const std::string& phone() const { return phone_; }
+    const std::string& email() const { return email_; }
+
+private:
+    std::string name_;
+    std::string phone_;
+    std::string email_;
+};
+
+// #############################
+// ## Student <Subclass of Person)
+// ## Has additional features to override base class
+// #############################
+enum class Year { Freshman, Sophomore, Junior, Senior };
+
+static std::string studentYear(Year y) {
+    switch (y) {
+    case Year::Freshman:  return "freshman";
+    case Year::Sophomore: return "sophomore";
+    case Year::Junior:    return "junior";
+    case Year::Senior:    return "senior";
+    }
+    return "not specified!";
+}
+
+class Student : public Person {
+public:
+    Student(std::string name, std::string phone, std::string email, Year year)
+        : Person(std::move(name), std::move(phone), std::move(email)), year_(year) {
+    }
+    //override base output
+    std::string to_string() const override {
+        std::ostringstream studentOut;
+        studentOut << "\nPerson named " << name()
+            << " has phone number " << phone()
+            << ". they can be reached at " << email()
+            << ". They are a " << studentYear(year_) << " in college.";
+        return studentOut.str();
+    }
+
+private:
+    Year year_;
+};
+
+// #############################
+// ## Employee <Subclass of Person>
+// ## Has additional features to override base class
+// #############################
+class Employee : public Person {
+public:
+    Employee(std::string name, std::string phone, std::string email, double salary)
+        : Person(std::move(name), std::move(phone), std::move(email)), salary_(salary) {
+    }
+
+    double salary() const { return salary_; }
+    // override base output
+    std::string to_string() const override {
+        std::ostringstream employeeOut;
+        employeeOut.setf(std::ios::fixed);
+        employeeOut.precision(2);
+        employeeOut << "\nPerson named " << name()
+            << " has phone number " << phone()
+            << ". They can be reached at " << email()
+            << ". They earn $" << salary_;
+        return employeeOut.str();
+    }
+
+private:
+    double salary_;
+};
+
+// #############################
+// ## Faculty <Subclass of Employee>
+// ## Features override Employee subclass settings
+// #############################
+class Faculty : public Employee {
+public:
+    Faculty(std::string name, std::string phone, std::string email, double salary, std::string title)
+        : Employee(std::move(name), std::move(phone), std::move(email), salary),
+        title_(std::move(title)) {
+    }
+    // overrides employee subclass output
+    std::string to_string() const override {
+        std::ostringstream facultyOut;
+        facultyOut.setf(std::ios::fixed);
+        facultyOut.precision(2);
+        facultyOut << "\nPerson named " << name()
+            << " has phone number " << phone()
+            << ". They can be reached at " << email()
+            << ". They earn $" << salary()
+            << ". Their title is " << title_;
+        return facultyOut.str();
+    }
+
+private:
+    std::string title_;
+};
+
+// #############################
+// ## Staff <Subclass of Employee>
+// ## Features override Employee subclass settings
+// #############################
+class Staff : public Employee {
+public:
+    Staff(std::string name, std::string phone, std::string email, double salary, std::string role)
+        : Employee(std::move(name), std::move(phone), std::move(email), salary),
+        role_(std::move(role)) {
+    }
+    // overrides employee subclass output
+    std::string to_string() const override {
+        std::ostringstream out;
+        out.setf(std::ios::fixed);
+        out.precision(2);
+        out << "\nPerson named " << name()
+            << " has phone number " << phone()
+            << ". They can be reached at " << email()
+            << " and earns $" << salary()
+            << ". Their role is " << role_;
+        return out.str();
+    }
+
+private:
+    std::string role_;
+};
+
+// #############################
+// ## main()
+// ## This is where the classes are called and replaced according to subclass the 'make_unique'  
+// #############################
+int main() {
+    std::vector<std::unique_ptr<Person>> people;
+    people.emplace_back(std::make_unique<Person>(
+        "Yelena Romanoff", "800-555-1212", "yromanoff@marvelunverse.com"));
+    people.emplace_back(std::make_unique<Student>(
+        "Bronny James", "619-555-0101", "bronnyjames@lsu.edu", Year::Freshman));
+    people.emplace_back(std::make_unique<Employee>(
+        "Michael Jordan", "808-555-2222", "jordan@nike.com", 72000000.00));
+    people.emplace_back(std::make_unique<Faculty>(
+        "Dr. Strange", "858-555-2323", "strange@marveluniverse.edu", 112500.00, "Professional Sorcerer"));
+    people.emplace_back(std::make_unique<Staff>(
+        "Logan", "415-555-1224", "wolverine@marvel.edu", 58500500.00, "The Wolverine"));
+
+    // #############################
+    // ## Iterate over Person pointers and call the virtual method.
+    // ## Using to_string() as per instructions; toString() also works.
+    // #############################
+    for (const auto& p : people) {
+        std::cout << p->to_string() << '\n';
+    }
+
+    return 0;
+}
