@@ -1,0 +1,193 @@
+// main.cpp
+#include <iostream>
+#include <iomanip>
+#include <memory>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <stdexcept>
+
+// ##################### Date #####################
+class Date {
+public:
+    Date() = default;
+    Date(int m, int d, int y) : month_(m), day_(d), year_(y) {
+        // Validate month and day
+        if (m < 1 || m > 12) throw std::invalid_argument("Month entry is invalid!");
+        if (d < 1 || d > 31) throw std::invalid_argument("Day entry is invalid!");
+    }
+
+    // Accessors
+    int month() const { return month_; }
+    int day()   const { return day_; }
+    int year()  const { return year_; }
+
+    // Compare against m-d-y
+    bool equals(int m, int d, int y) const {
+        return month_ == m && day_ == d && year_ == y;
+    }
+
+    // Convert to string MM-DD-YYYY
+    std::string to_string() const {
+        std::ostringstream os;
+        os << std::setfill('0')
+            << std::setw(2) << month_ << "-"
+            << std::setw(2) << day_ << "-"
+            << std::setw(4) << year_;
+        return os.str();
+    }
+
+private:
+    int month_ = 1;
+    int day_ = 1;
+    int year_ = 1989;
+};
+
+// ##################### Appointment Base #####################
+class Appointment {
+public:
+    Appointment(std::string details, Date date)
+        : details_(std::move(details)), date_(date) {
+    }
+    virtual ~Appointment() = default;
+
+    const std::string& details() const { return details_; }
+    const Date& date() const { return date_; }
+
+    // Does the appointment occur on the given date (MM DD YYYY)?
+    virtual bool occurs_on(int m, int d, int y) const = 0;
+
+    virtual std::string type() const = 0;
+
+    virtual std::string to_string() const {
+        std::ostringstream os;
+        os << "[" << type() << "] " << details_ << " on " << date_.to_string();
+        return os.str();
+    }
+
+protected:
+    std::string details_;
+    Date        date_;
+};
+
+// ##################### Day (exact date) #####################
+class Day : public Appointment {
+public:
+    using Appointment::Appointment;
+    bool occurs_on(int m, int d, int y) const override {
+        return date().equals(m, d, y);
+    }
+    std::string type() const override { return "Day"; }
+};
+
+// ##################### Monthly (day+year match) #####################
+class Monthly : public Appointment {
+public:
+    using Appointment::Appointment;
+    bool occurs_on(int m, int d, int y) const override {
+        // Only the day and year need to match
+        return date().year() == y && date().day() == d;
+    }
+    std::string type() const override { return "Monthly"; }
+
+    std::string to_string() const override {
+        std::ostringstream os;
+        os << "[Monthly] " << details_
+            << " (each month on day " << date().day()
+            << " for the year " << date().year() << ")";
+        return os.str();
+    }
+};
+
+// ##################### Print the matches #####################
+void display_matches_on(const std::vector<std::unique_ptr<Appointment>>& appts,
+    int m, int d, int y)
+{
+    std::cout << "\nAppointments on " << std::setfill('0')
+        << std::setw(2) << m << "-" << std::setw(2) << d << "-" << std::setw(4) << y << ":\n";
+    bool any = false;
+
+    for (const auto& a : appts) {
+        if (a->occurs_on(m, d, y)) {
+            std::cout << "  - " << a->to_string() << "\n";
+            any = true;
+        }
+    }
+    if (!any) std::cout << "  None\n";
+}
+
+// ##################### Test Arena! #####################
+// Outputs test of each type as specified by requirements
+void run_tests() {
+    std::cout << "\n+-+-+-+-+ The tests will display the results of use +-+-+-+-+\n";
+
+    std::vector<std::unique_ptr<Appointment>> appts;
+    appts.emplace_back(std::make_unique<Monthly>("Rent is due!", Date(1, 1, 2025)));              
+    appts.emplace_back(std::make_unique<Monthly>("Monthly Report Meeting", Date(3, 15, 2025)));   
+    appts.emplace_back(std::make_unique<Monthly>("Monthly Haircut", Date(7, 10, 2025)));
+    appts.emplace_back(std::make_unique<Day>("Birthday Celebration for James", Date(10, 3, 2025)));
+    appts.emplace_back(std::make_unique<Day>("Dental Appointment", Date(10, 16, 2025)));
+    appts.emplace_back(std::make_unique<Day>("Interview with Qualcomm", Date(10, 16, 2025)));
+    appts.emplace_back(std::make_unique<Day>("Project Demo Day", Date(11, 2, 2025)));
+    appts.emplace_back(std::make_unique<Day>("National University Graduation Day!", Date(3, 15, 2026)));
+
+    std::cout << "\nAll appointments:\n";
+    for (const auto& a : appts)
+        std::cout << "  * " << a->to_string() << "\n";
+
+    std::cout << "\nTest 1: Exact match 10-16-2025:\n";
+    display_matches_on(appts, 10, 16, 2025);
+
+    std::cout << "\nTest 2: Monthly (Rent: day=1, year=2025)\n";
+    display_matches_on(appts, 1, 1, 2025);
+    display_matches_on(appts, 6, 1, 2025);
+    display_matches_on(appts, 12, 1, 2025);
+
+    std::cout << "\nTest 3: Monthly Report 3-15-2025:\n";
+    display_matches_on(appts, 3, 15, 2025);
+    display_matches_on(appts, 7, 10, 2025);
+
+    std::cout << "\nTest 4: Year boundary check:\n";
+    display_matches_on(appts, 1, 1, 2026);
+    display_matches_on(appts, 3, 15, 2026);
+
+    std::cout << "\n+-+-+-+-+ Tests complete +-+-+-+-+\n";
+}
+
+// ##################### Main #####################
+// Live. The actual response dependent on date entered.
+int main() {
+    try {
+        std::vector<std::unique_ptr<Appointment>> appts;
+        appts.emplace_back(std::make_unique<Monthly>("Rent Due Date", Date(1, 1, 2025)));
+        appts.emplace_back(std::make_unique<Monthly>("Monthly Report Meeting", Date(3, 15, 2025)));
+        appts.emplace_back(std::make_unique<Monthly>("Monthly haircut", Date(7, 10, 2025)));
+        appts.emplace_back(std::make_unique<Day>("It's James' Birthday!", Date(10, 3, 2025)));
+        appts.emplace_back(std::make_unique<Day>("Dental Appointment", Date(10, 16, 2025)));
+        appts.emplace_back(std::make_unique<Day>("Interview with Qualcomm", Date(10, 16, 2025)));
+        appts.emplace_back(std::make_unique<Day>("Project Demo Day", Date(11, 2, 2025)));
+        appts.emplace_back(std::make_unique<Day>("National University Graduation Day!", Date(3, 15, 2026)));
+
+        std::cout << "\nWelcome to your appointment calendar!\n";
+        std::cout << "\nEnter a date (MM DD YYYY): ";
+
+        int m = 0, d = 0, y = 0;
+        if (std::cin >> m >> d >> y) {
+            if (m < 1 || m > 12 || d < 1 || d > 31)
+                std::cout << "Invalid date! Month <1-12> and Day <1-31> only!\n";
+            else
+                display_matches_on(appts, m, d, y);
+        }
+        else {
+            std::cout << "Bad input! Skipping search...\n";
+            std::cin.clear();
+        }
+
+        run_tests();
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << "\n";
+        return 1;
+    }
+    return 0;
+}
