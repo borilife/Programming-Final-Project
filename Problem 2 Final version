@@ -1,0 +1,167 @@
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <vector>
+using namespace std;
+
+/* ============================================================
+   Base Class: Person
+   ============================================================ */
+class Person {
+protected:
+    string name;
+    string phone;
+    string email;
+
+public:
+    Person(string n, string p, string e)
+        : name(n), phone(p), email(e) {}
+
+    virtual ~Person() {}
+
+    virtual string toString() const {
+        ostringstream out;
+        out << "Person named " << name
+            << " has phone number " << phone
+            << " and can be reached at " << email << ".";
+        return out.str();
+    }
+};
+
+/* ============================================================
+   Enum for Student Year
+   ============================================================ */
+enum Year { Freshman, Sophomore, Junior, Senior };
+
+static string yearToString(Year y) {
+    switch (y) {
+        case Freshman:  return "Freshman";
+        case Sophomore: return "Sophomore";
+        case Junior:    return "Junior";
+        case Senior:    return "Senior";
+        default:        return "Unknown";
+    }
+}
+
+/* ============================================================
+   Derived Class: Student
+   ============================================================ */
+class Student : public Person {
+private:
+    Year yearLevel;
+
+public:
+    Student(string n, string p, string e, Year y)
+        : Person(n, p, e), yearLevel(y) {}
+
+    string toString() const {
+        ostringstream out;
+        out << "Student named " << name
+            << " has phone number " << phone
+            << ", email " << email
+            << ", and is a " << yearToString(yearLevel) << " in college.";
+        return out.str();
+    }
+};
+
+/* ============================================================
+   Derived Class: Employee
+   ============================================================ */
+class Employee : public Person {
+protected:
+    double salary;
+
+public:
+    Employee(string n, string p, string e, double s)
+        : Person(n, p, e), salary(s) {}
+
+    double getSalary() const { return salary; }
+
+    string toString() const {
+        ostringstream out;
+        out.setf(ios::fixed);
+        out.precision(2);
+        out << "Employee named " << name
+            << " has phone number " << phone
+            << ", email " << email
+            << ", and earns $" << salary << " annually.";
+        return out.str();
+    }
+};
+
+/* ============================================================
+   Derived Class: Faculty (inherits from Employee)
+   ============================================================ */
+class Faculty : public Employee {
+private:
+    string title;
+
+public:
+    Faculty(string n, string p, string e, double s, string t)
+        : Employee(n, p, e, s), title(t) {}
+
+    string toString() const {
+        ostringstream out;
+        out.setf(ios::fixed);
+        out.precision(2);
+        out << "Faculty named " << name
+            << " has phone number " << phone
+            << ", email " << email
+            << ", earns $" << salary
+            << ", and holds the title of " << title << ".";
+        return out.str();
+    }
+};
+
+/* ============================================================
+   Derived Class: Staff (inherits from Employee)
+   ============================================================ */
+class Staff : public Employee {
+private:
+    string role;
+
+public:
+    Staff(string n, string p, string e, double s, string r)
+        : Employee(n, p, e, s), role(r) {}
+
+    string toString() const {
+        ostringstream out;
+        out.setf(ios::fixed);
+        out.precision(2);
+        out << "Staff member " << name
+            << " has phone number " << phone
+            << ", email " << email
+            << ", earns $" << salary
+            << ", and serves as " << role << ".";
+        return out.str();
+    }
+};
+
+/* ============================================================
+   Main Function: Test Program
+   ============================================================ */
+int main() {
+    cout << "===== PERSON CLASS HIERARCHY TEST =====\n\n";
+
+    vector<Person*> people;
+
+    // Create and store objects using base class pointer
+    people.push_back(new Person("Yelena Romanoff", "800-555-1212", "yromanoff@marveluniverse.com"));
+    people.push_back(new Student("Bronny James", "619-555-0101", "bronnyjames@lsu.edu", Freshman));
+    people.push_back(new Employee("Michael Jordan", "808-555-2222", "mjordan@nike.com", 72000000.00));
+    people.push_back(new Faculty("Dr. Strange", "858-555-2323", "strange@marveluniverse.edu", 112500.00, "Professional Sorcerer"));
+    people.push_back(new Staff("Logan", "415-555-1224", "wolverine@marvel.edu", 58500500.00, "The Wolverine"));
+
+    // Display each object's information
+    for (size_t i = 0; i < people.size(); ++i) {
+        cout << people[i]->toString() << "\n\n";
+    }
+
+    // Clean up memory
+    for (size_t i = 0; i < people.size(); ++i) {
+        delete people[i];
+    }
+
+    cout << "===== END OF PROGRAM =====\n";
+    return 0;
+}
