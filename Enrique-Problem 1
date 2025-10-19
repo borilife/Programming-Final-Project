@@ -1,0 +1,135 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iomanip>
+using namespace std;
+
+// ------------------------------
+// Date Class
+// ------------------------------
+class Date {
+private:
+    int year, month, day;
+
+public:
+    Date(int y = 0, int m = 0, int d = 0)
+        : year(y), month(m), day(d) {}
+
+    int getYear() const { return year; }
+    int getMonth() const { return month; }
+    int getDay() const { return day; }
+
+    string toString() const {
+        return to_string(month) + "/" + to_string(day) + "/" + to_string(year);
+    }
+};
+
+// ------------------------------
+// Base Class: Appointment
+// ------------------------------
+class Appointment {
+protected:
+    string description;
+    Date date;
+
+public:
+    Appointment(string desc, int y, int m, int d)
+        : description(move(desc)), date(y, m, d) {}
+
+    virtual ~Appointment() = default;
+
+    virtual bool occurs_on(int y, int m, int d) const = 0; // pure virtual
+
+    virtual void print() const {
+        cout << left << setw(30) << description
+             << " | Date: " << date.toString();
+    }
+};
+
+// ------------------------------
+// Derived Class: Day Appointment
+// ------------------------------
+class Day : public Appointment {
+public:
+    Day(string desc, int y, int m, int d)
+        : Appointment(move(desc), y, m, d) {}
+
+    bool occurs_on(int y, int m, int d) const override {
+        return (date.getYear() == y && date.getMonth() == m && date.getDay() == d);
+    }
+
+    void print() const override {
+        cout << "Day Appointment    -> ";
+        Appointment::print();
+    }
+};
+
+// ------------------------------
+// Derived Class: Monthly Appointment
+// ------------------------------
+class Monthly : public Appointment {
+public:
+    Monthly(string desc, int d)
+        : Appointment(move(desc), 0, 0, d) {}
+
+    bool occurs_on(int y, int m, int d) const override {
+        // Monthly appointments repeat every month and every year
+        return (date.getDay() == d);
+    }
+
+    void print() const override {
+        cout << "Monthly Appointment -> "
+             << left << setw(30) << description
+             << " | Day: " << date.getDay() << " (every month)";
+    }
+};
+
+// ------------------------------
+// MAIN FUNCTION
+// ------------------------------
+int main() {
+    vector<Appointment*> appointments;
+
+    // Sample appointments
+    appointments.push_back(new Day("Dentist Visit", 2025, 10, 20));
+    appointments.push_back(new Day("Team Meeting", 2025, 10, 19));
+    appointments.push_back(new Monthly("Pay Credit Card Bill", 19));
+    appointments.push_back(new Monthly("Gym Membership Renewal", 1));
+    appointments.push_back(new Monthly("Car Insurance Payment", 25));
+
+    cout << "\n====== Appointment Scheduler ======\n";
+
+    char choice;
+    do {
+        int year, month, day;
+        cout << "\nEnter a date to check (YYYY MM DD): ";
+        cin >> year >> month >> day;
+
+        cout << "\nAppointments on " << month << "/" << day << "/" << year << ":\n";
+        cout << "------------------------------------------\n";
+
+        bool found = false;
+        for (auto a : appointments) {
+            if (a->occurs_on(year, month, day)) {
+                a->print();
+                cout << endl;
+                found = true;
+            }
+        }
+
+        if (!found)
+            cout << "No appointments found on that date.\n";
+
+        cout << "\nWould you like to check another date? (Y/N): ";
+        cin >> choice;
+
+    } while (toupper(choice) == 'Y');
+
+    cout << "\nThank you for using the Appointment Scheduler!\n";
+
+    // Clean up memory
+    for (auto a : appointments)
+        delete a;
+
+    return 0;
+}
